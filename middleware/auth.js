@@ -27,7 +27,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // 3. Verify token with proper options
+   
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
       issuer: 'thriftstore-api',
       audience: 'thriftstore-client'
@@ -53,7 +53,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
       });
     }
 
-    // 5. Check if user changed password after the token was issued (only for regular users)
+    
     if (!isAdmin && user.passwordChangedAt) {
       const changedTimestamp = parseInt(
         user.passwordChangedAt.getTime() / 1000,
@@ -68,7 +68,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
       }
     }
 
-    // 6. Check session version (only for regular users)
+    
     if (!isAdmin && decoded.sessionVersion && user.sessionVersion) {
       if (decoded.sessionVersion < user.sessionVersion) {
         return res.status(401).json({
@@ -78,7 +78,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
       }
     }
 
-    // 7. Check if user is active (only for regular users)
+    
     if (!isAdmin && !user.isActive) {
       return res.status(401).json({
         status: 'error',
@@ -86,7 +86,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
       });
     }
 
-    // 8. Check if account is locked (only for regular users)
+    
     if (!isAdmin && user.isAccountLocked) {
       const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
       return res.status(423).json({
@@ -118,9 +118,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-// =============================================
-// Middleware for Role-Based Access Control (RBAC)
-// =============================================
+
 exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
