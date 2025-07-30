@@ -253,7 +253,7 @@ const simpleLogin = asyncHandler(async (req, res) => {
   user.lastLoginIp = req.ip;
   await user.save();
 
-  // Create JWT token with session version
+
   const token = jwt.sign(
     {
       id: user._id,
@@ -274,7 +274,7 @@ const simpleLogin = asyncHandler(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: (process.env.JWT_COOKIE_EXPIRES_IN || 72) * 60 * 60 * 1000, // 3 days
+    maxAge: (process.env.JWT_COOKIE_EXPIRES_IN || 72) * 60 * 60 * 1000,
     path: '/'
   });
 
