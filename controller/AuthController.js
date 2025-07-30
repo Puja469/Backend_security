@@ -373,7 +373,7 @@ const login = async (req, res) => {
             });
         }
 
-        // Create JWT token with proper expiration
+        
         const token = jwt.sign(
             {
                 id: admin._id,
@@ -388,12 +388,12 @@ const login = async (req, res) => {
             }
         );
 
-        // Set secure HTTP-only cookie
+        
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: (process.env.JWT_COOKIE_EXPIRES_IN || 1) * 60 * 60 * 1000, // Convert hours to milliseconds
+            maxAge: (process.env.JWT_COOKIE_EXPIRES_IN || 1) * 60 * 60 * 1000, 
             path: '/'
         });
 
@@ -420,10 +420,10 @@ const login = async (req, res) => {
     }
 };
 
-// Enhanced logout function
+
 const logout = async (req, res) => {
     try {
-        // Clear the token cookie
+       
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -448,7 +448,7 @@ const logout = async (req, res) => {
     }
 };
 
-// Logout from all devices
+
 const logoutAllDevices = async (req, res) => {
     try {
         if (!req.user) {
@@ -458,10 +458,10 @@ const logoutAllDevices = async (req, res) => {
             });
         }
 
-        // Invalidate all sessions by incrementing session version
+        
         await req.user.invalidateSessions();
 
-        // Clear the token cookie
+       
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
