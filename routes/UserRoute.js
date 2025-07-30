@@ -34,14 +34,14 @@ const { protect, authorize } = require("../middleware/auth");
 const { validateCSRFTokenMiddleware } = require("../middleware/csrf");
 const activityLogger = require("../middleware/activityLogger");
 
-// Apply security middleware to all routes
+
 router.use(sanitizeData);
 router.use(preventXSS);
 router.use(preventHPP);
 router.use(detectSuspiciousActivity);
 router.use(securityHeaders);
 
-// Regular API calls - NO rate limiting needed (strategic approach)
+
 router.get("/", activityLogger("Viewed all users"), findAll);
 router.get("/findAll", protect, authorize('admin'), activityLogger("Viewed all users"), findAll);
 router.get("/profile", protect, activityLogger("Viewed own profile"), getProfile);
@@ -49,7 +49,7 @@ router.get("/:id", protect, activityLogger("Viewed user by ID"), findById);
 router.delete("/:id", protect, authorize('admin'), validateCSRFTokenMiddleware, activityLogger("Deleted user by ID"), deleteById);
 router.put("/:id", protect, uploadLimiter, upload, validateCSRFTokenMiddleware, activityLogger("Updated user profile"), update);
 
-// Registration - needs rate limiting
+
 router.post("/", apiLimiter, validateCSRFTokenMiddleware, UserValidation, validatePasswordMiddleware, save);
 
 // Auth & verification routes with strict rate limiting
