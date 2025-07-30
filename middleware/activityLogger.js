@@ -1,9 +1,8 @@
-const ActivityLog = require("../model/ActivityLog"); // fixed typo 'model' → 'models'
-
+const ActivityLog = require("../model/ActivityLog"); 
 const activityLogger = (action) => {
   return async (req, res, next) => {
     try {
-      // Only log if userId is available
+     
       if (req.user?._id) {
         await ActivityLog.create({
           userId: req.user._id,
