@@ -7,7 +7,7 @@ const otpGenerator = require("otp-generator");
 const sendEmail = require("../utils/emailService");
 const asyncHandler = require("../middleware/async");
 const ActivityLog = require("../model/ActivityLog");
-const { validatePassword, getPasswordStrength } = require("../middleware/passwordPolicy");
+const { validatePassword } = require("../middleware/passwordPolicy");
 
 const logActivity = async (userId, action, ip, userAgent = null, resource = null, method = null, statusCode = null, severity = 'low', metadata = {}) => {
   try {
@@ -118,7 +118,7 @@ const save = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Find user with all necessary fields
+
   const user = await User.findOne({ email }).select("+password +otp +otp_expiry +loginAttempts +lockUntil +isLocked +passwordChangedAt");
 
   if (!user) {
@@ -141,7 +141,7 @@ const login = asyncHandler(async (req, res) => {
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    // Increment login attempts
+
     await user.incLoginAttempts();
 
     await logActivity(user._id, "login_failed", req.ip, req.get('User-Agent'), '/api/user/sign', 'POST', 401, 'medium', { reason: 'invalid_password' });
@@ -151,7 +151,7 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  // Reset login attempts on successful password verification
+
   await user.resetLoginAttempts();
 
   // Check password expiry
