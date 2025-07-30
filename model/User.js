@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { safeEncrypt, safeDecrypt } = require("../utils/encryption");
 
 const userSchema = new mongoose.Schema({
     fname: {
@@ -10,18 +11,37 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,             // prevent duplicate emails
-        lowercase: true,          // normalize email
-        trim: true
+        trim: true,
+        set: function (value) {
+            // Convert to lowercase before encryption
+            const lowerValue = value.toLowerCase();
+            return safeEncrypt(lowerValue, process.env.DATA_ENCRYPTION_KEY);
+        },
+        get: function (value) {
+            return safeDecrypt(value, process.env.DATA_ENCRYPTION_KEY);
+        }
     },
     phone: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        set: function (value) {
+            return safeEncrypt(value, process.env.DATA_ENCRYPTION_KEY);
+        },
+        get: function (value) {
+            return safeDecrypt(value, process.env.DATA_ENCRYPTION_KEY);
+        }
     },
     city: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        set: function (value) {
+            return safeEncrypt(value, process.env.DATA_ENCRYPTION_KEY);
+        },
+        get: function (value) {
+            return safeDecrypt(value, process.env.DATA_ENCRYPTION_KEY);
+        }
     },
     password: {
         type: String,
@@ -71,12 +91,12 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    // Session management
+
     sessionVersion: {
         type: Number,
         default: 1
     },
-    // Security tracking
+
     lastLoginAt: {
         type: Date,
         default: null
@@ -95,7 +115,9 @@ const userSchema = new mongoose.Schema({
         default: false
     }
 }, {
-    timestamps: true             // adds createdAt and updatedAt fields automatically
+    timestamps: true,            // adds createdAt and updatedAt fields automatically
+    toJSON: { getters: true },   // enable getters when converting to JSON
+    toObject: { getters: true }  // enable getters when converting to object
 });
 
 // Virtual for checking if account is locked
@@ -123,7 +145,7 @@ userSchema.methods.incLoginAttempts = function () {
     return this.updateOne(updates);
 };
 
-// Method to reset login attempts
+
 userSchema.methods.resetLoginAttempts = function () {
     return this.updateOne({
         $unset: { loginAttempts: 1, lockUntil: 1 },
@@ -131,7 +153,7 @@ userSchema.methods.resetLoginAttempts = function () {
     });
 };
 
-// Method to invalidate all sessions
+
 userSchema.methods.invalidateSessions = function () {
     return this.updateOne({
         $inc: { sessionVersion: 1 }
