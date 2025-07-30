@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 
-// Password policy configuration
+
 const passwordPolicy = {
   minLength: 8,
   maxLength: 128,
@@ -12,7 +12,7 @@ const passwordPolicy = {
   preventUserInfo: true
 };
 
-// Common passwords to prevent
+
 const commonPasswords = [
   'password', '123456', '123456789', 'qwerty', 'abc123', 'password123',
   'admin', 'letmein', 'welcome', 'monkey', 'dragon', 'master', 'hello',
@@ -29,42 +29,42 @@ const commonPasswords = [
 const validatePassword = (password, userInfo = {}) => {
   const errors = [];
 
-  // Check minimum length
+ 
   if (password.length < passwordPolicy.minLength) {
     errors.push(`Password must be at least ${passwordPolicy.minLength} characters long`);
   }
 
-  // Check maximum length
+  
   if (password.length > passwordPolicy.maxLength) {
     errors.push(`Password must not exceed ${passwordPolicy.maxLength} characters`);
   }
 
-  // Check for uppercase letters
+  
   if (passwordPolicy.requireUppercase && !/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter');
   }
 
-  // Check for lowercase letters
+  
   if (passwordPolicy.requireLowercase && !/[a-z]/.test(password)) {
     errors.push('Password must contain at least one lowercase letter');
   }
 
-  // Check for numbers
+ 
   if (passwordPolicy.requireNumbers && !/\d/.test(password)) {
     errors.push('Password must contain at least one number');
   }
 
-  // Check for special characters
+  
   if (passwordPolicy.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
     errors.push('Password must contain at least one special character');
   }
 
-  // Check for common passwords
+  
   if (passwordPolicy.preventCommonPasswords && commonPasswords.includes(password.toLowerCase())) {
     errors.push('Password is too common. Please choose a more unique password');
   }
 
-  // Check for user information in password
+  
   if (passwordPolicy.preventUserInfo && userInfo) {
     const userInfoLower = Object.values(userInfo).join(' ').toLowerCase();
     const passwordLower = password.toLowerCase();
@@ -74,12 +74,12 @@ const validatePassword = (password, userInfo = {}) => {
     }
   }
 
-  // Check for sequential characters
+  
   if (/(.)\1{2,}/.test(password)) {
     errors.push('Password should not contain repeated characters');
   }
 
-  // Check for keyboard patterns
+  
   const keyboardPatterns = ['qwerty', 'asdfgh', 'zxcvbn', '123456', '654321'];
   const passwordLower = password.toLowerCase();
   for (const pattern of keyboardPatterns) {
