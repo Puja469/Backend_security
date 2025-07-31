@@ -17,7 +17,7 @@ const {
   changePassword
 } = require("../controller/UserController");
 
-const UserValidation = require("../validation/UserValidation");
+const { UserValidation, EmailVerificationValidation, SendOTPValidation } = require("../validation/UserValidation");
 const upload = require("../middleware/upload");
 const {
   apiLimiter,
@@ -56,9 +56,9 @@ router.post("/", apiLimiter, validateCSRFTokenMiddleware, UserValidation, valida
 router.post("/sign", authLimiter, login); // 2FA login (requires OTP)
 router.post("/simple-login", authLimiter, simpleLogin); // Simple login (no 2FA) - for testing
 router.post("/verify-login-otp", authLimiter, verifyLoginOTP);
-router.post("/send-otp", authLimiter, sendVerificationOTP);
-router.post("/verify-email", authLimiter, verifyEmail);
-router.post("/forgot-password", authLimiter, sendPasswordResetOTP);
+router.post("/send-otp", authLimiter, SendOTPValidation, sendVerificationOTP);
+router.post("/verify-email", authLimiter, EmailVerificationValidation, verifyEmail);
+router.post("/forgot-password", authLimiter, SendOTPValidation, sendPasswordResetOTP);
 router.post("/reset-password", authLimiter, validateCSRFTokenMiddleware, validatePasswordMiddleware, resetPassword);
 
 // Password change with protection
