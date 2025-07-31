@@ -4,26 +4,24 @@ const jwt = require("jsonwebtoken");
 const User = require("../model/User");
 const SECRET_KEY = process.env.JWT_SECRET;
 const otpGenerator = require("otp-generator");
-const sendEmail = require("../utils/emailService");
+const { sendEmail, createEmailVerificationTemplate, createPasswordResetTemplate } = require("../utils/emailService");
 const asyncHandler = require("../middleware/async");
 const ActivityLog = require("../model/ActivityLog");
 const { validatePassword } = require("../middleware/passwordPolicy");
 
 const logActivity = async (userId, action, ip, userAgent = null, resource = null, method = null, statusCode = null, severity = 'low', metadata = {}) => {
   try {
-    if (userId) {
-      await ActivityLog.create({
-        userId,
-        action,
-        ipAddress: ip,
-        userAgent,
-        resource,
-        method,
-        statusCode,
-        severity,
-        metadata
-      });
-    }
+    await ActivityLog.create({
+      userId: userId || null, // Allow null for anonymous activities
+      action,
+      ipAddress: ip,
+      userAgent,
+      resource,
+      method,
+      statusCode,
+      severity,
+      metadata
+    });
   } catch (err) {
     console.error("Activity log failed:", err.message);
   }
@@ -88,7 +86,8 @@ const save = asyncHandler(async (req, res) => {
 
   // Send verification email with proper error handling
   try {
-    await sendEmail(email, "Email Verification OTP", `Hello ${fname},\n\nYour OTP is: ${otp}`);
+    const emailTemplate = createEmailVerificationTemplate(fname, otp);
+    await sendEmail(email, "🛍️ Welcome to ThriftStore - Verify Your Account", emailTemplate.text, emailTemplate.html);
     console.log(`✅ Verification email sent successfully to ${email}`);
   } catch (emailError) {
     console.error(`❌ Failed to send verification email to ${email}:`, emailError.message);
@@ -386,7 +385,16 @@ const sendVerificationOTP = asyncHandler(async (req, res) => {
     await logActivity(null, "otp_request_failed", req.ip, req.get('User-Agent'), '/api/user/send-otp', 'POST', 400, 'medium', { reason: 'user_not_found', email });
     return res.status(400).json({
       status: 'error',
-      message: "User not found"
+      message: "User not found with this email address"
+    });
+  }
+
+  // Check if user is already verified
+  if (user.is_verified) {
+    await logActivity(user._id, "otp_request_failed", req.ip, req.get('User-Agent'), '/api/user/send-otp', 'POST', 400, 'medium', { reason: 'already_verified', email });
+    return res.status(400).json({
+      status: 'error',
+      message: "Email is already verified"
     });
   }
 
@@ -400,7 +408,8 @@ const sendVerificationOTP = asyncHandler(async (req, res) => {
   user.otp_expiry = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
 
-  await sendEmail(email, "Email Verification OTP", `Hello ${user.fname},\n\nYour OTP is: ${otp}`);
+  const emailTemplate = createEmailVerificationTemplate(user.fname, otp);
+  await sendEmail(email, "🛍️ Verify Your ThriftStore Account - Email Verification", emailTemplate.text, emailTemplate.html);
 
   await logActivity(user._id, "otp_sent", req.ip, req.get('User-Agent'), '/api/user/send-otp', 'POST', 200, 'low', { type: 'email_verification' });
 
@@ -412,31 +421,52 @@ const sendVerificationOTP = asyncHandler(async (req, res) => {
 
 const verifyEmail = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
-  const user = await User.findOne({ email });
 
-  if (!user || !user.otp || !user.otp_expiry) {
-    await logActivity(null, "email_verification_failed", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 400, 'medium', { reason: 'invalid_or_expired_otp', email });
+  // Check if user exists
+  const user = await User.findOne({ email });
+  if (!user) {
+    await logActivity(null, "email_verification_failed", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 400, 'medium', { reason: 'user_not_found', email });
     return res.status(400).json({
       status: 'error',
-      message: "Invalid or expired OTP"
+      message: "User not found with this email address"
     });
   }
 
+  // Check if OTP exists and is not expired
+  if (!user.otp || !user.otp_expiry) {
+    await logActivity(user._id, "email_verification_failed", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 400, 'medium', { reason: 'no_otp_found', email });
+    return res.status(400).json({
+      status: 'error',
+      message: "No OTP found. Please request a new OTP"
+    });
+  }
+
+  // Check if OTP is expired
+  if (new Date() > user.otp_expiry) {
+    await logActivity(user._id, "email_verification_failed", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 400, 'medium', { reason: 'otp_expired', email });
+    return res.status(400).json({
+      status: 'error',
+      message: "OTP has expired. Please request a new OTP"
+    });
+  }
+
+  // Verify OTP
   const isOtpValid = await bcrypt.compare(otp, user.otp);
   if (!isOtpValid) {
-    await logActivity(user._id, "email_verification_failed", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 400, 'medium', { reason: 'invalid_otp' });
+    await logActivity(user._id, "email_verification_failed", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 400, 'medium', { reason: 'invalid_otp', email });
     return res.status(400).json({
       status: 'error',
-      message: "Invalid OTP"
+      message: "Invalid OTP. Please check and try again"
     });
   }
 
+  // Mark email as verified
   user.is_verified = true;
   user.otp = null;
   user.otp_expiry = null;
   await user.save();
 
-  await logActivity(user._id, "Verified Email", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 200, 'low');
+  await logActivity(user._id, "email_verified", req.ip, req.get('User-Agent'), '/api/user/verify-email', 'POST', 200, 'low', { email: user.email });
 
   res.status(200).json({
     status: 'success',
@@ -466,7 +496,8 @@ const sendPasswordResetOTP = asyncHandler(async (req, res) => {
   user.otp_expiry = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
 
-  await sendEmail(email, "Password Reset OTP", `Hello ${user.fname},\n\nYour password reset OTP is: ${otp}\n\nThis OTP will expire in 10 minutes.`);
+  const emailTemplate = createPasswordResetTemplate(user.fname, otp);
+  await sendEmail(email, "🔐 Reset Your ThriftStore Password", emailTemplate.text, emailTemplate.html);
 
   await logActivity(user._id, "otp_sent", req.ip, req.get('User-Agent'), '/api/user/forgot-password', 'POST', 200, 'low', { type: 'password_reset' });
 
