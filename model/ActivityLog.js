@@ -4,7 +4,7 @@ const activityLogSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Users",
-    required: true
+    required: false // Allow anonymous activities
   },
   action: {
     type: String,
