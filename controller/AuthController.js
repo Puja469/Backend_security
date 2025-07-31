@@ -3,25 +3,22 @@ const jwt = require('jsonwebtoken');
 const Credential = require("../model/Credential");
 const User = require("../model/User");
 const otpGenerator = require("otp-generator");
-const sendEmail = require("../utils/emailService");
+const { sendEmail, createEmailVerificationTemplate, createPasswordResetTemplate, createLoginVerificationTemplate } = require("../utils/emailService");
 const ActivityLog = require("../model/ActivityLog");
 
 const logActivity = async (userId, action, ip, userAgent = null, resource = null, method = null, statusCode = null, severity = 'low', metadata = {}) => {
     try {
-        // Only log if userId is provided
-        if (userId) {
-            await ActivityLog.create({
-                userId,
-                action,
-                ipAddress: ip,
-                userAgent,
-                resource,
-                method,
-                statusCode,
-                severity,
-                metadata
-            });
-        }
+        await ActivityLog.create({
+            userId: userId || null, // Allow null for anonymous activities
+            action,
+            ipAddress: ip,
+            userAgent,
+            resource,
+            method,
+            statusCode,
+            severity,
+            metadata
+        });
     } catch (err) {
         console.error("Activity log failed:", err.message);
     }
@@ -76,7 +73,8 @@ const registerUser = async (req, res) => {
         const savedUser = await user.save();
 
         // Send verification email
-        await sendEmail(email, "Email Verification OTP", `Hello ${fname},\n\nYour OTP is: ${otp}`);
+        const emailTemplate = createEmailVerificationTemplate(fname, otp);
+        await sendEmail(email, "🛍️ Welcome to ThriftStore - Verify Your Account", emailTemplate.text, emailTemplate.html);
         await logActivity(savedUser._id, "Registered", req.ip, req.get('User-Agent'), '/api/auth/register', 'POST', 201);
 
         // Don't send password in response
@@ -226,7 +224,8 @@ const loginUser = async (req, res) => {
         await user.save();
 
         // Send OTP email
-        await sendEmail(user.email, "Login Verification OTP", `Hello ${user.fname},\n\nYour login verification OTP is: ${otp}\n\nThis OTP will expire in 5 minutes.`);
+        const emailTemplate = createLoginVerificationTemplate(user.fname, otp);
+        await sendEmail(user.email, "🔐 Complete Your ThriftStore Login", emailTemplate.text, emailTemplate.html);
 
         await logActivity(user._id, "login", req.ip, req.get('User-Agent'), '/api/auth/login', 'POST', 200, 'low', { step: 'otp_sent' });
 
@@ -373,7 +372,7 @@ const login = async (req, res) => {
             });
         }
 
-        
+
         const token = jwt.sign(
             {
                 id: admin._id,
@@ -388,12 +387,12 @@ const login = async (req, res) => {
             }
         );
 
-        
+
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: (process.env.JWT_COOKIE_EXPIRES_IN || 1) * 60 * 60 * 1000, 
+            maxAge: (process.env.JWT_COOKIE_EXPIRES_IN || 1) * 60 * 60 * 1000,
             path: '/'
         });
 
@@ -423,7 +422,7 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-       
+
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -458,10 +457,10 @@ const logoutAllDevices = async (req, res) => {
             });
         }
 
-        
+
         await req.user.invalidateSessions();
 
-       
+
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
