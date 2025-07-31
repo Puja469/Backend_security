@@ -64,18 +64,18 @@ const productCreationLimiter = createRateLimiter(
   'Too many product creation attempts, please try again later.'
 );
 
-// Sanitize data
+
 const sanitizeData = mongoSanitize();
 
-// Prevent XSS attacks
+
 const preventXSS = xss();
 
-// Prevent HTTP Parameter Pollution
+
 const preventHPP = hpp({
-  whitelist: ['category', 'subcategory', 'price', 'sort'] // Allow these parameters to be duplicated
+  whitelist: ['category', 'subcategory', 'price', 'sort'] 
 });
 
-// Request validation middleware
+
 const validateRequest = (schema) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);
