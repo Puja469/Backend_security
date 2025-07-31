@@ -14,9 +14,9 @@ const https = require("https");
 
 const app = express();
 
-// ---------------- HTTPS Server Setup ----------------
-const key = fs.readFileSync("key.pem");      // Your private key
-const cert = fs.readFileSync("cert.pem");    // Your certificate
+
+const key = fs.readFileSync("key.pem");      
+const cert = fs.readFileSync("cert.pem");   
 const server = https.createServer({ key, cert }, app);
 
 // ---------------- Security Middleware ----------------
