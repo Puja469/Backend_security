@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { safeEncrypt, safeDecrypt } = require("../utils/encryption");
 
 const userSchema = new mongoose.Schema({
     fname: {
@@ -13,35 +12,19 @@ const userSchema = new mongoose.Schema({
         unique: true,             // prevent duplicate emails
         trim: true,
         set: function (value) {
-            // Convert to lowercase before encryption
-            const lowerValue = value.toLowerCase();
-            return safeEncrypt(lowerValue, process.env.DATA_ENCRYPTION_KEY);
-        },
-        get: function (value) {
-            return safeDecrypt(value, process.env.DATA_ENCRYPTION_KEY);
+            // Convert to lowercase
+            return value.toLowerCase();
         }
     },
     phone: {
         type: String,
         required: true,
-        trim: true,
-        set: function (value) {
-            return safeEncrypt(value, process.env.DATA_ENCRYPTION_KEY);
-        },
-        get: function (value) {
-            return safeDecrypt(value, process.env.DATA_ENCRYPTION_KEY);
-        }
+        trim: true
     },
     city: {
         type: String,
         required: true,
-        trim: true,
-        set: function (value) {
-            return safeEncrypt(value, process.env.DATA_ENCRYPTION_KEY);
-        },
-        get: function (value) {
-            return safeDecrypt(value, process.env.DATA_ENCRYPTION_KEY);
-        }
+        trim: true
     },
     password: {
         type: String,
