@@ -1,29 +1,29 @@
 const crypto = require('crypto');
 
-// CSRF token storage (in production, use Redis or database)
+
 const csrfTokens = new Map();
 
-// CSRF Configuration
+
 const CSRF_CONFIG = {
   tokenLength: 32,
   cookieName: 'csrf-token',
   headerName: 'X-CSRF-Token',
   cookieOptions: {
-    httpOnly: false, // Must be false for frontend to read
+    httpOnly: false, 
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, 
     path: '/'
   },
-  sessionTimeout: 24 * 60 * 60 * 1000 // 24 hours
+  sessionTimeout: 24 * 60 * 60 * 1000 
 };
 
-// Generate a random CSRF token
+
 const generateCSRFToken = () => {
   return crypto.randomBytes(CSRF_CONFIG.tokenLength).toString('hex');
 };
 
-// Store CSRF token with session info
+
 const storeCSRFToken = (token, userId = null) => {
   const expiresAt = Date.now() + CSRF_CONFIG.sessionTimeout;
   csrfTokens.set(token, {
@@ -32,7 +32,7 @@ const storeCSRFToken = (token, userId = null) => {
     createdAt: Date.now()
   });
   
-  // Clean up expired tokens periodically
+  
   cleanupExpiredTokens();
 };
 
