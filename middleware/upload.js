@@ -3,10 +3,10 @@ const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
 
-// Max file size: 5MB (from environment variable)
+
 const maxSize = parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024;
 
-// Allowed MIME types for images
+
 const allowedMimeTypes = [
   'image/jpeg',
   'image/jpg', 
@@ -15,17 +15,15 @@ const allowedMimeTypes = [
   'image/webp'
 ];
 
-// Allowed file extensions
+
 const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
-// ===========================
-// Secure storage configuration
-// ===========================
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, "../public/uploads");
     
-    // Create directory if it doesn't exist
+   
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
@@ -33,7 +31,7 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Generate secure random filename
+    
     const randomBytes = crypto.randomBytes(16).toString('hex');
     const ext = path.extname(file.originalname).toLowerCase();
     const fileName = `${randomBytes}${ext}`;
@@ -41,11 +39,9 @@ const storage = multer.diskStorage({
   }
 });
 
-// ===========================
-// Enhanced file filter with MIME type validation
-// ===========================
+
 const secureFileFilter = (req, file, cb) => {
-  // Check file extension
+  
   const ext = path.extname(file.originalname).toLowerCase();
   if (!allowedExtensions.includes(ext)) {
     return cb(
@@ -54,7 +50,7 @@ const secureFileFilter = (req, file, cb) => {
     );
   }
 
-  // Check MIME type
+ 
   if (!allowedMimeTypes.includes(file.mimetype)) {
     return cb(
       new Error("Invalid file type detected. Only image files are allowed."),
@@ -62,7 +58,7 @@ const secureFileFilter = (req, file, cb) => {
     );
   }
 
-  // Additional security checks
+ 
   if (file.originalname.includes('..') || file.originalname.includes('/') || file.originalname.includes('\\')) {
     return cb(
       new Error("Invalid filename detected."),
