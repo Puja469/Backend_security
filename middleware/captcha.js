@@ -9,7 +9,7 @@ const captchaConfig = {
     maxAttempts: 3
 };
 
-// Generate CAPTCHA challenge
+
 const generateCaptcha = () => {
     let chars;
     switch (captchaConfig.complexity) {
@@ -33,13 +33,13 @@ const generateCaptcha = () => {
     return captcha;
 };
 
-// Create CAPTCHA session
+
 const createCaptchaSession = (req) => {
     const captcha = generateCaptcha();
     const sessionId = crypto.randomBytes(16).toString('hex');
     const expiry = Date.now() + captchaConfig.expiryTime;
 
-    // Store CAPTCHA in session (you might want to use Redis in production)
+   
     if (!req.session) {
         req.session = {};
     }
