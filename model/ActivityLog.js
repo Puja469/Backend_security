@@ -43,7 +43,11 @@ const activityLogSchema = new mongoose.Schema({
       'password_expired',
       'otp_expired_or_invalid',
       'invalid_otp',
-      'otp_validation_failed'
+      'otp_validation_failed',
+      'user_blocked',
+      'user_unblocked',
+      'user_block_failed',
+      'user_unblock_failed'
     ]
   },
   severity: {
