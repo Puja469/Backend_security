@@ -15,8 +15,8 @@ const https = require("https");
 const app = express();
 
 
-const key = fs.readFileSync("key.pem");      
-const cert = fs.readFileSync("cert.pem");   
+const key = fs.readFileSync("key.pem");
+const cert = fs.readFileSync("cert.pem");
 const server = https.createServer({ key, cert }, app);
 
 // ---------------- Security Middleware ----------------
@@ -46,7 +46,7 @@ app.use(
   })
 );
 
-// ---------------- CORS ----------------
+
 const corsOptions = {
   origin: FRONTEND_ORIGINS,
   credentials: true,
@@ -82,6 +82,7 @@ app.use("/api/comments", require("./routes/CommentRoute"));
 app.use("/api/orders", require("./routes/OrderRoute"));
 app.use("/api/security", require("./routes/SecurityRoute"));
 app.use("/api/csrf", require("./routes/CSRFRoute"));
+app.use("/api/admin", require("./routes/UserManagementRoute"));
 
 // ---------------- Database ----------------
 connectDb();
