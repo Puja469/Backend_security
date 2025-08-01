@@ -96,6 +96,33 @@ const userSchema = new mongoose.Schema({
     isGoogleUser: {
         type: Boolean,
         default: false
+    },
+    // Admin block functionality
+    isBlocked: {
+        type: Boolean,
+        default: false
+    },
+    blockedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+        default: null
+    },
+    blockedAt: {
+        type: Date,
+        default: null
+    },
+    blockReason: {
+        type: String,
+        default: null
+    },
+    unblockedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+        default: null
+    },
+    unblockedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true,            // adds createdAt and updatedAt fields automatically
@@ -140,6 +167,42 @@ userSchema.methods.resetLoginAttempts = function () {
 userSchema.methods.invalidateSessions = function () {
     return this.updateOne({
         $inc: { sessionVersion: 1 }
+    });
+};
+
+// Method to block user
+userSchema.methods.blockUser = function (adminId, reason) {
+    return this.updateOne({
+        $set: {
+            isBlocked: true,
+            blockedBy: adminId,
+            blockedAt: new Date(),
+            blockReason: reason,
+            isLocked: true // Also lock the account
+        },
+        $unset: {
+            unblockedBy: 1,
+            unblockedAt: 1
+        }
+    });
+};
+
+// Method to unblock user
+userSchema.methods.unblockUser = function (adminId) {
+    return this.updateOne({
+        $set: {
+            isBlocked: false,
+            unblockedBy: adminId,
+            unblockedAt: new Date(),
+            isLocked: false,
+            loginAttempts: 0
+        },
+        $unset: {
+            blockedBy: 1,
+            blockedAt: 1,
+            blockReason: 1,
+            lockUntil: 1
+        }
     });
 };
 
