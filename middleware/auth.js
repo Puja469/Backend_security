@@ -27,7 +27,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
   }
 
   try {
-   
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
       issuer: 'thriftstore-api',
       audience: 'thriftstore-client'
@@ -53,7 +53,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
       });
     }
 
-    
+
     if (!isAdmin && user.passwordChangedAt) {
       const changedTimestamp = parseInt(
         user.passwordChangedAt.getTime() / 1000,
@@ -68,7 +68,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
       }
     }
 
-    
+
     if (!isAdmin && decoded.sessionVersion && user.sessionVersion) {
       if (decoded.sessionVersion < user.sessionVersion) {
         return res.status(401).json({
@@ -78,7 +78,7 @@ exports.protect = asyncHandler(async (req, res, next) => {
       }
     }
 
-    
+
     if (!isAdmin && !user.isActive) {
       return res.status(401).json({
         status: 'error',
@@ -86,12 +86,20 @@ exports.protect = asyncHandler(async (req, res, next) => {
       });
     }
 
-    
+
     if (!isAdmin && user.isAccountLocked) {
       const lockTimeRemaining = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
       return res.status(423).json({
         status: 'error',
         message: `Account is locked due to multiple failed login attempts. Try again in ${lockTimeRemaining} minutes.`
+      });
+    }
+
+    // Check if user is blocked by admin
+    if (!isAdmin && user.isBlocked) {
+      return res.status(403).json({
+        status: 'error',
+        message: `Account has been blocked by administrator. Reason: ${user.blockReason || 'No reason provided'}. Contact support for assistance.`
       });
     }
 
